@@ -991,6 +991,14 @@
       }
     }
 
+    function setMusicVolume(targetVol) {
+      if (!musicMasterGain || isMuted || !audioContext) return;
+      try {
+        musicMasterGain.gain.cancelScheduledValues(audioContext.currentTime);
+        musicMasterGain.gain.linearRampToValueAtTime(targetVol, audioContext.currentTime + 0.4);
+      } catch (e) {}
+    }
+
     const musicToggleBtn = document.getElementById('music-toggle-btn');
     musicToggleBtn.addEventListener('click', () => {
       isMuted = !isMuted;
@@ -1058,6 +1066,8 @@
       baselineNoise = 0;
       baselineSamplesCount = 0;
 
+      const ordinal = getOrdinalSuffix(currentConfig.age);
+
       animals.forEach((animal, index) => {
         animal.style.opacity = '1';
         animal.style.animation = `popIn 0.4s ${index * 0.1}s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
@@ -1077,16 +1087,38 @@
         document.getElementById('dog').style.animation = `wobbleRun 1.8s ease-in-out forwards`;
       }, 500);
 
-      // Only allow blowing AFTER the speech bubble shows up (2.4s)
+      // Phase 1: Animals arrive (2.2s)
       setTimeout(() => {
+        bubble.innerHTML = `Happy ${ordinal || currentConfig.age + 'th'} Birthday ${currentConfig.name}! 🎂<br/><span style="font-size:0.9rem; color:#d81b60;">Get ready to make a wish...</span>`;
         bubble.classList.add('show');
+      }, 2200);
+
+      // Phase 2: Countdown 3 (3.4s) - Duck music volume for quiet mic
+      setTimeout(() => {
+        bubble.innerHTML = `Make a wish! 🕯️<br/><b style="font-size:1.35rem; color:#d81b60;">3...</b>`;
+        setMusicVolume(0.18);
+      }, 3400);
+
+      // Phase 3: Countdown 2 (4.5s)
+      setTimeout(() => {
+        bubble.innerHTML = `Get ready... 🌬️<br/><b style="font-size:1.35rem; color:#d81b60;">2...</b>`;
+      }, 4500);
+
+      // Phase 4: Countdown 1 (5.6s)
+      setTimeout(() => {
+        bubble.innerHTML = `Deep breath... 💨<br/><b style="font-size:1.35rem; color:#d81b60;">1...</b>`;
+      }, 5600);
+
+      // Phase 5: GO / BLOW NOW! (6.7s) - Unlocks microphone blow
+      setTimeout(() => {
+        bubble.innerHTML = `🎂 <b style="font-size:1.25rem; color:#d81b60;">BLOW THE CANDLES! 💨</b><br/><span style="font-size:0.8rem; color:#555;">Blow directly into your mic</span>`;
         canBlow = true;
-        consecutiveBlowFrames = 0; // Fresh counter once unlocked
+        consecutiveBlowFrames = 0;
         if (blowHint) {
           blowHint.style.opacity = '1';
           blowHint.style.pointerEvents = 'auto';
         }
-      }, 2400);
+      }, 6700);
     }
 
     function listenForBlow() {
@@ -1114,7 +1146,7 @@
         }
       }
 
-      // Pre-calibrate baseline while intro animation is running (<2.4s)
+      // Pre-calibrate baseline while intro animation & countdown are running (<6.7s)
       if (!canBlow) {
         if (baselineSamplesCount === 0) {
           baselineNoise = currentFreqAvg;
@@ -1157,8 +1189,11 @@
         try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
       }
 
+      // Swell music up to full festive volume on blow!
+      setMusicVolume(0.95);
+
       flames.forEach(f => f.classList.add('out'));
-      bubble.classList.remove('show');
+      bubble.innerHTML = `🎉 Yay!! Happy Birthday! ✨`;
       if (blowHint) blowHint.style.opacity = '0';
 
       if (window.confetti) {

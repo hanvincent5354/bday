@@ -1001,6 +1001,9 @@
       showToast(isMuted ? 'Music Muted' : 'Music Playing 🎶');
     });
 
+    let consecutiveBlowFrames = 0;
+    let baselineNoise = 30;
+
     const openCardBtn = document.getElementById('open-card-btn');
     openCardBtn.addEventListener('click', () => {
       cardModal.classList.add('open');
@@ -1023,7 +1026,7 @@
           
           const filter = audioContext.createBiquadFilter();
           filter.type = 'lowpass';
-          filter.frequency.value = 250;
+          filter.frequency.value = 120; // Focus strictly on sub-120Hz aerodynamic breath turbulence
 
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 256;
@@ -1042,6 +1045,7 @@
 
     function runOpeningSequence() {
       canBlow = false;
+      consecutiveBlowFrames = 0;
       animals.forEach((animal, index) => {
         animal.style.opacity = '1';
         animal.style.animation = `popIn 0.4s ${index * 0.1}s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
@@ -1083,19 +1087,32 @@
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
 
+      // Measure low-frequency turbulence bins (sub-120 Hz)
       let sum = 0;
       let maxVal = 0;
-      for (let i = 1; i < 8; i++) {
+      for (let i = 1; i <= 4; i++) {
         sum += dataArray[i];
         if (dataArray[i] > maxVal) maxVal = dataArray[i];
       }
-      let avg = sum / 7;
+      let avg = sum / 4;
 
-      // Require a loud, deliberate blow (high average or strong peak in sub-250Hz)
-      if (avg > 92 || maxVal > 135) {
-        blowCandles();
-        return;
+      // Track ambient baseline noise smoothly
+      baselineNoise = baselineNoise * 0.96 + avg * 0.04;
+
+      // Intentional blow signature: must significantly exceed ambient speaker/room baseline
+      const isStrongBreath = (avg > baselineNoise + 45 && avg > 85) || (maxVal > 135 && maxVal > baselineNoise + 55);
+
+      if (isStrongBreath) {
+        consecutiveBlowFrames++;
+        // Requires sustained breath turbulence across 5 consecutive animation frames (~80-100ms)
+        if (consecutiveBlowFrames >= 5) {
+          blowCandles();
+          return;
+        }
+      } else {
+        consecutiveBlowFrames = Math.max(0, consecutiveBlowFrames - 1);
       }
+
       requestAnimationFrame(listenForBlow);
     }
 

@@ -1026,7 +1026,7 @@
       if (audioContext.state === 'suspended') {
         audioContext.resume();
       }
-      startBackgroundMusic();
+      // Note: Music will NOT start here; it starts triumphantly only AFTER the candle is blown!
 
       try {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -1040,13 +1040,14 @@
           });
           const source = audioContext.createMediaStreamSource(micStream);
           
+          // Strict 75 Hz low-pass filter: cuts off human voices (>100Hz) and catches pure breath wind turbulence
           const filter = audioContext.createBiquadFilter();
           filter.type = 'lowpass';
-          filter.frequency.value = 150; // Low frequency breath band
+          filter.frequency.value = 75;
 
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 256;
-          analyser.smoothingTimeConstant = 0.3;
+          analyser.smoothingTimeConstant = 0.2;
           source.connect(filter);
           filter.connect(analyser);
 
@@ -1089,24 +1090,23 @@
 
       // Phase 1: Animals arrive (2.2s)
       setTimeout(() => {
-        bubble.innerHTML = `Happy ${ordinal || currentConfig.age + 'th'} Birthday ${currentConfig.name}! 🎂<br/><span style="font-size:0.9rem; color:#d81b60;">Get ready to make a wish...</span>`;
+        bubble.innerHTML = `Happy ${ordinal || currentConfig.age + 'th'} Birthday ${currentConfig.name}! 🎂<br/><span style="font-size:0.9rem; color:#d81b60;">Make a wish...</span>`;
         bubble.classList.add('show');
       }, 2200);
 
-      // Phase 2: Countdown 3 (3.4s) - Duck music volume for quiet mic
+      // Phase 2: Countdown 3 (3.4s)
       setTimeout(() => {
-        bubble.innerHTML = `Make a wish! 🕯️<br/><b style="font-size:1.35rem; color:#d81b60;">3...</b>`;
-        setMusicVolume(0.18);
+        bubble.innerHTML = `Get ready... 🕯️<br/><b style="font-size:1.4rem; color:#d81b60;">3...</b>`;
       }, 3400);
 
       // Phase 3: Countdown 2 (4.5s)
       setTimeout(() => {
-        bubble.innerHTML = `Get ready... 🌬️<br/><b style="font-size:1.35rem; color:#d81b60;">2...</b>`;
+        bubble.innerHTML = `Take a deep breath... 🌬️<br/><b style="font-size:1.4rem; color:#d81b60;">2...</b>`;
       }, 4500);
 
       // Phase 4: Countdown 1 (5.6s)
       setTimeout(() => {
-        bubble.innerHTML = `Deep breath... 💨<br/><b style="font-size:1.35rem; color:#d81b60;">1...</b>`;
+        bubble.innerHTML = `Almost there... 💨<br/><b style="font-size:1.4rem; color:#d81b60;">1...</b>`;
       }, 5600);
 
       // Phase 5: GO / BLOW NOW! (6.7s) - Unlocks microphone blow
@@ -1130,47 +1130,42 @@
       const timeData = new Uint8Array(analyser.fftSize);
       analyser.getByteTimeDomainData(timeData);
 
-      // Compute low-frequency energy (bins 1..6)
-      let freqSum = 0;
-      for (let i = 1; i <= 6; i++) {
-        freqSum += freqData[i];
-      }
-      let currentFreqAvg = freqSum / 6;
+      // Sub-75Hz infrasound breath energy (bin 1)
+      const breathEnergy = freqData[1];
 
-      // Detect physical wind turbulence / diaphragm displacement (clipping values near 0 or 255)
+      // Physical diaphragm displacement / wind clipping (values near 0 or 255)
       let windTurbulenceClips = 0;
       for (let i = 0; i < timeData.length; i++) {
         const val = timeData[i];
-        if (val < 45 || val > 210) {
+        if (val < 40 || val > 215) {
           windTurbulenceClips++;
         }
       }
 
-      // Pre-calibrate baseline while intro animation & countdown are running (<6.7s)
+      // Pre-calibrate baseline while countdown is running (<6.7s)
       if (!canBlow) {
         if (baselineSamplesCount === 0) {
-          baselineNoise = currentFreqAvg;
+          baselineNoise = breathEnergy;
         } else {
-          baselineNoise = baselineNoise * 0.92 + currentFreqAvg * 0.08;
+          baselineNoise = baselineNoise * 0.9 + breathEnergy * 0.1;
         }
         baselineSamplesCount++;
         requestAnimationFrame(listenForBlow);
         return;
       }
 
-      // Continuous slow baseline adaptation
-      baselineNoise = baselineNoise * 0.98 + currentFreqAvg * 0.02;
+      // Adapt ambient baseline
+      baselineNoise = baselineNoise * 0.98 + breathEnergy * 0.02;
 
-      // Genuine Breath / Blow Signature:
-      // 1. Aerodynamic wind clipping on mic capsule (windTurbulenceClips >= 8), OR
-      // 2. Powerful sustained low-frequency roar significantly exceeding music/ambient baseline
-      const isBreathTurbulence = (windTurbulenceClips >= 8 && currentFreqAvg > baselineNoise + 30) ||
-                                 (currentFreqAvg > baselineNoise + 65 && currentFreqAvg > 135);
+      // Pure Breath Wind Signature (not voice):
+      // Direct breath puffs create physical wind clipping on the mic and high sub-75Hz energy
+      const isActualBlow = (windTurbulenceClips >= 7 && breathEnergy > baselineNoise + 25) ||
+                           (breathEnergy > baselineNoise + 70 && breathEnergy > 130);
 
-      if (isBreathTurbulence) {
+      if (isActualBlow) {
         consecutiveBlowFrames++;
-        // Must be a sustained blow for at least 7 consecutive animation frames (~110ms)
-        if (consecutiveBlowFrames >= 7) {
+        // Must be a sustained blow for at least 6 consecutive animation frames (~100ms)
+        if (consecutiveBlowFrames >= 6) {
           blowCandles();
           return;
         }
@@ -1189,8 +1184,8 @@
         try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
       }
 
-      // Swell music up to full festive volume on blow!
-      setMusicVolume(0.95);
+      // Start the Happy Birthday celebration music now!
+      startBackgroundMusic();
 
       flames.forEach(f => f.classList.add('out'));
       bubble.innerHTML = `🎉 Yay!! Happy Birthday! ✨`;

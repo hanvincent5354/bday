@@ -1,0 +1,16 @@
+{
+  "name": "Happy Birthday Celebration",
+  "short_name": "BirthdayApp",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FFF5F7",
+  "theme_color": "#FF8DA1",
+  "icons": [
+    {
+      "src": "https://api.iconify.design/twemoji:birthday-cake.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "birthday-pwa",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node test-runner.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}

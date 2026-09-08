@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Happy Birthday Celebration!</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#FF8DA1" id="meta-theme-color" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Confetti script -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bg-start: #ffffff;
+      --bg-end: #fff0f3;
+      --primary: #d81b60;
+      --primary-start: #ff6b8b;
+      --primary-end: #ff8da1;
+      --primary-glow: rgba(255, 107, 139, 0.4);
+      --choco: #3e2723;
+      --frosting: #5d4037;
+      --cake-text: #ffd54f;
+      --cream: #fff3e0;
+      --gold: #ffb300;
+      --card-left-bg: #faf7f5;
+      --card-border: #e0d5ce;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at center, var(--bg-start) 0%, var(--bg-end) 100%);
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.5s ease;
+    }
+
+    /* Floating Customize Button */
+    .top-bar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 150;
+      display: flex;
+      gap: 8px;
+    }
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .icon-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+
+    /* Permission / Start Screen */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-end);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      text-align: center;
+      padding: 24px;
+      transition: opacity 0.4s ease;
+    }
+    .start-card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 32px 28px;
+      border-radius: 28px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+      max-width: 360px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .start-btn {
+      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+      color: white;
+      border: none;
+      padding: 16px 36px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      border-radius: 999px;
+      box-shadow: 0 8px 24px var(--primary-glow);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      width: 100%;
+    }
+    .start-btn:active { transform: scale(0.96); }
+
+    /* Scene Container */
+    #stage {
+      position: relative;
+      width: 100vw;
+      max-width: 440px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Speech Bubble */
+    .speech-bubble {
+      position: absolute;
+      top: 14%;
+      background: white;
+      border-radius: 20px;
+      padding: 14px 20px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+      font-size: 1.05rem;
+      opacity: 0;
+      transform: translateY(10px) scale(0.9);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10;
+      max-width: 85%;
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: white transparent;
+    }
+    .speech-bubble.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Cake Elements */
+    .cake-container {
+      position: relative;
+      margin-top: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .cake-layer {
+      width: 220px;
+      height: 95px;
+      background: linear-gradient(180deg, #4e342e 0%, var(--choco) 100%);
+      border-radius: 22px 22px 14px 14px;
+      position: relative;
+      box-shadow: 0 10px 25px rgba(62, 39, 35, 0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-top: 10px solid var(--frosting);
+      transition: all 0.4s ease;
+    }
+    .cake-layer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: 100%;
+      height: 18px;
+      background: radial-gradient(circle at 10px 0, transparent 8px, var(--choco) 8px);
+      background-size: 20px 20px;
+    }
+    .cake-text {
+      color: var(--cake-text);
+      font-family: 'Brush Script MT', 'Dancing Script', cursive, sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: 0.5px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      margin-top: 8px;
+      padding: 0 10px;
+      text-align: center;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cake-age {
+      font-weight: 900;
+      font-size: 0.85rem;
+      color: #fff3e0;
+      background: rgba(0,0,0,0.25);
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-top: 4px;
+    }
+
+    /* Candles */
+    .candles-row {
+      display: flex;
+      gap: 18px;
+      margin-bottom: -4px;
+      z-index: 2;
+    }
+    .candle {
+      width: 10px;
+      height: 38px;
+      background: repeating-linear-gradient(45deg, #fff, #fff 4px, #ff5252 4px, #ff5252 8px);
+      border-radius: 3px 3px 0 0;
+      position: relative;
+    }
+    .wick {
+      position: absolute;
+      top: -6px;
+      left: 4px;
+      width: 2px;
+      height: 6px;
+      background: #333;
+    }
+    .flame {
+      position: absolute;
+      top: -20px;
+      left: -1px;
+      width: 12px;
+      height: 16px;
+      background: #ffa000;
+      border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+      box-shadow: 0 0 10px #ffb300, 0 0 16px #ff6f00;
+      animation: flicker 0.15s infinite alternate ease-in-out;
+      transform-origin: bottom center;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .flame.out {
+      opacity: 0 !important;
+      transform: scale(0.2) translateY(-10px);
+    }
+    @keyframes flicker {
+      0% { transform: scale(1) rotate(-2deg); }
+      100% { transform: scale(1.1) rotate(3deg); }
+    }
+
+    /* Animated Characters */
+    .chibi {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.2s ease;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0) translateY(50px); opacity: 0; }
+      70% { transform: scale(1.15) translateY(-10px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes wobbleRun {
+      0% { transform: translate(var(--startX), var(--startY)) rotate(0deg); }
+      25% { transform: translate(calc(var(--startX) * 0.5), calc(var(--startY) * 0.5)) rotate(-12deg); }
+      50% { transform: translate(0, 0) rotate(12deg); }
+      75% { transform: translate(calc(var(--targetX) * 0.5), calc(var(--targetY) * 0.5)) rotate(-8deg); }
+      100% { transform: translate(var(--targetX), var(--targetY)) rotate(0deg); }
+    }
+    @keyframes cheerJump {
+      0%, 100% { transform: translate(var(--targetX), var(--targetY)) scale(1); }
+      50% { transform: translate(var(--targetX), calc(var(--targetY) - 24px)) scale(1.1); }
+    }
+
+    #penguin {
+      --targetX: -105px;
+      --targetY: 60px;
+      bottom: 38%;
+      left: 50%;
+    }
+    #cat {
+      --targetX: -32px;
+      --targetY: 92px;
+      bottom: 38%;
+      left: 50%;
+    }
+    #dog {
+      --targetX: 42px;
+      --targetY: 60px;
+      bottom: 38%;
+      left: 50%;
+    }
+
+    .cheering {
+      animation: cheerJump 0.45s infinite ease-in-out !important;
+    }
+
+    /* 3D Greeting Card */
+    #card-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      z-index: 200;
+      perspective: 1200px;
+      padding: 16px;
+    }
+    #card-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .card-book {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      height: 480px;
+      display: flex;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #ffffff;
+      transform: scale(0.85) rotateY(15deg);
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    #card-modal.open .card-book {
+      transform: scale(1) rotateY(0deg);
+    }
+
+    .card-half {
+      flex: 1;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-left {
+      background: var(--card-left-bg);
+      border-right: 1px dashed var(--card-border);
+    }
+    .card-left img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border: 4px solid white;
+    }
+    .card-right {
+      background: #ffffff;
+      text-align: left;
+      overflow-y: auto;
+    }
+    .card-right h2 {
+      color: var(--primary);
+      font-size: 1.25rem;
+      margin: 0 0 10px 0;
+    }
+    .card-right p {
+      color: #555;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      margin: 0;
+      white-space: pre-line;
+    }
+
+    .card-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.06);
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+    }
+
+    #blow-hint {
+      margin-top: 24px;
+      font-size: 0.85rem;
+      color: #888;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 12px;
+      z-index: 20;
+    }
+
+    /* Customizer Drawer / Modal */
+    #customizer-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #customizer-modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .customizer-box {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 440px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #444;
+      margin-bottom: 5px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .theme-option {
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .theme-option.active {
+      border-color: var(--primary);
+      background: var(--bg-end);
+    }
+    .palette-circle {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+      color: white;
+    }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      background: #2e7d32;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      z-index: 400;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Customization & Share Bar -->
+  <div class="top-bar">
+    <button class="icon-btn" id="open-customizer-btn" title="Customize Birthday">
+      ⚙️ Customize
+    </button>
+    <button class="icon-btn" id="share-btn" title="Copy Personalized Link">
+      🔗 Share Link
+    </button>
+  </div>
+
+  <div id="start-screen">
+    <div class="start-card">
+      <div style="font-size: 2.5rem; margin-bottom: 8px;">🎂</div>
+      <h1 id="landing-title" style="color: var(--primary); margin: 0 0 8px 0; font-size: 1.5rem;">A Special Surprise!</h1>
+      <p style="color: #666; font-size: 0.95rem; margin: 0 0 20px 0; line-height: 1.4;">
+        Tap start to begin the celebration (please allow microphone access so you can blow out the candles!).
+      </p>
+      <button class="start-btn" id="start-btn">Start Celebration 🎉</button>
+    </div>
+  </div>
+
+  <div id="stage">
+    <div class="speech-bubble" id="bubble">
+      Happy 60th Birthday! 🎂<br/>Blow the candles and make a wish!
+    </div>
+
+    <div class="cake-container">
+      <div class="candles-row">
+        <div class="candle"><div class="wick"></div><div class="flame" id="flame-1"></div></div>
+        <div class="candle"><div class="wick"></div><div class="flame" id="flame-2"></div></div>
+        <div class="candle"><div class="wick"></div><div class="flame" id="flame-3"></div></div>
+      </div>
+      <div class="cake-layer">
+        <div class="cake-text" id="cake-text">Happy Birthday Mom</div>
+        <div class="cake-age" id="cake-age">60 Years of Joy</div>
+      </div>
+    </div>
+
+    <!-- Chibi Penguin -->
+    <div id="penguin" class="chibi">
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <ellipse cx="50" cy="55" rx="30" ry="36" fill="#2d3436"/>
+        <ellipse cx="50" cy="58" rx="22" ry="28" fill="#ffffff"/>
+        <ellipse cx="42" cy="40" rx="4" ry="5" fill="#2d3436"/>
+        <ellipse cx="58" cy="40" rx="4" ry="5" fill="#2d3436"/>
+        <circle cx="43" cy="38" r="1.5" fill="#fff"/>
+        <circle cx="59" cy="38" r="1.5" fill="#fff"/>
+        <polygon points="46,46 54,46 50,54" fill="#ff7675"/>
+        <ellipse cx="38" cy="91" rx="8" ry="4" fill="#ff7675"/>
+        <ellipse cx="62" cy="91" rx="8" ry="4" fill="#ff7675"/>
+      </svg>
+    </div>
+
+    <!-- Chibi Cat -->
+    <div id="cat" class="chibi">
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <polygon points="26,30 38,10 50,30" fill="#f8a5c2"/>
+        <polygon points="50,30 62,10 74,30" fill="#f8a5c2"/>
+        <ellipse cx="50" cy="56" rx="32" ry="30" fill="#f7d794"/>
+        <ellipse cx="50" cy="62" rx="20" ry="18" fill="#ffffff"/>
+        <circle cx="40" cy="48" r="4.5" fill="#303952"/>
+        <circle cx="60" cy="48" r="4.5" fill="#303952"/>
+        <circle cx="41" cy="46" r="1.5" fill="#fff"/>
+        <circle cx="61" cy="46" r="1.5" fill="#fff"/>
+        <polygon points="48,54 52,54 50,57" fill="#f8a5c2"/>
+        <circle cx="34" cy="55" r="4" fill="#ff7675" opacity="0.4"/>
+        <circle cx="66" cy="55" r="4" fill="#ff7675" opacity="0.4"/>
+      </svg>
+    </div>
+
+    <!-- Chibi Dog -->
+    <div id="dog" class="chibi">
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <ellipse cx="22" cy="46" rx="10" ry="20" fill="#b08d57" transform="rotate(15 22 46)"/>
+        <ellipse cx="78" cy="46" rx="10" ry="20" fill="#b08d57" transform="rotate(-15 78 46)"/>
+        <ellipse cx="50" cy="52" rx="30" ry="28" fill="#dfb15b"/>
+        <ellipse cx="50" cy="60" rx="18" ry="16" fill="#ffffff"/>
+        <circle cx="41" cy="46" r="4" fill="#2d3436"/>
+        <circle cx="59" cy="46" r="4" fill="#2d3436"/>
+        <circle cx="42" cy="44" r="1.5" fill="#fff"/>
+        <circle cx="60" cy="44" r="1.5" fill="#fff"/>
+        <ellipse cx="50" cy="52" rx="5" ry="3.5" fill="#2d3436"/>
+        <path d="M48,64 Q50,71 52,64" stroke="#ff7675" stroke-width="5" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div id="blow-hint">Tap here if mic is quiet / manual blow</div>
+  </div>
+
+  <!-- 3D Greeting Card Modal -->
+  <div id="card-modal">
+    <div class="card-book">
+      <button class="card-close-btn" id="close-card-btn" title="Close Card">✕</button>
+      <div class="card-half card-left">
+        <img id="card-img" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80" alt="Special Photo" />
+      </div>
+      <div class="card-half card-right">
+        <h2 id="card-headline">Happy 60th! ✨</h2>
+        <p id="card-message">
+          Wishing you a diamond milestone filled with endless health, bright laughter, warmth, and all the love in the world.<br/><br/>
+          Thank you for every moment, wisdom, and smile. Here is to your best chapter yet!
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Customizer Modal -->
+  <div id="customizer-modal">
+    <div class="customizer-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:1.2rem; color:#333;">✨ Customize Birthday</h3>
+        <button id="close-customizer-btn" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-name">Recipient Name</label>
+        <input type="text" id="cfg-name" class="form-control" placeholder="e.g. Mom, Dad, Sarah" />
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-age">Age / Milestone</label>
+        <input type="number" id="cfg-age" class="form-control" placeholder="e.g. 60, 30, 21" min="1" max="120" />
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-headline">Card Headline</label>
+        <input type="text" id="cfg-headline" class="form-control" placeholder="e.g. Happy 60th! ✨" />
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-message">Personal Wish Message</label>
+        <textarea id="cfg-message" class="form-control" rows="3" placeholder="Write your heartfelt wish here..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-photo">Photo URL / Upload</label>
+        <input type="text" id="cfg-photo" class="form-control" placeholder="Image URL (https://...)" style="margin-bottom:6px;" />
+        <input type="file" id="cfg-photo-file" accept="image/*" style="font-size:0.8rem;" />
+      </div>
+
+      <div class="form-group">
+        <label>Favorite Color Theme Palette</label>
+        <div class="theme-grid" id="theme-selector-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="action-btn btn-secondary" id="reset-config-btn">Reset</button>
+        <button class="action-btn btn-primary" id="save-config-btn">Apply & Preview 🎉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-msg">Link copied to clipboard! 🎉</div>
+
+  <script>
+    // Self-contained Engine (works under both file:// and http://)
+    const THEMES = {
+      rose: {
+        id: 'rose',
+        name: '🌸 Rose Blossom',
+        bgGradStart: '#ffffff',
+        bgGradEnd: '#fff0f3',
+        primary: '#d81b60',
+        primaryGradStart: '#ff6b8b',
+        primaryGradEnd: '#ff8da1',
+        primaryGlow: 'rgba(255, 107, 139, 0.4)',
+        choco: '#3e2723',
+        frosting: '#5d4037',
+        cakeText: '#ffd54f',
+        cardLeftBg: '#faf7f5',
+        cardBorder: '#e0d5ce'
+      },
+      royal: {
+        id: 'royal',
+        name: '👑 Royal Midnight & Gold',
+        bgGradStart: '#1a237e',
+        bgGradEnd: '#0d133a',
+        primary: '#ffd700',
+        primaryGradStart: '#ffb300',
+        primaryGradEnd: '#f57f17',
+        primaryGlow: 'rgba(255, 179, 0, 0.45)',
+        choco: '#212121',
+        frosting: '#37474f',
+        cakeText: '#ffd700',
+        cardLeftBg: '#101735',
+        cardBorder: '#3949ab'
+      },
+      emerald: {
+        id: 'emerald',
+        name: '🌿 Emerald Luxury',
+        bgGradStart: '#e8f5e9',
+        bgGradEnd: '#c8e6c9',
+        primary: '#2e7d32',
+        primaryGradStart: '#43a047',
+        primaryGradEnd: '#66bb6a',
+        primaryGlow: 'rgba(67, 160, 71, 0.4)',
+        choco: '#2e3d2f',
+        frosting: '#3d523e',
+        cakeText: '#fff176',
+        cardLeftBg: '#f1f8e9',
+        cardBorder: '#a5d6a7'
+      },
+      lavender: {
+        id: 'lavender',
+        name: '💜 Lavender Dream',
+        bgGradStart: '#f3e5f5',
+        bgGradEnd: '#e1bee7',
+        primary: '#7b1fa2',
+        primaryGradStart: '#ab47bc',
+        primaryGradEnd: '#ba68c8',
+        primaryGlow: 'rgba(171, 71, 188, 0.4)',
+        choco: '#311b92',
+        frosting: '#4a148c',
+        cakeText: '#e1bee7',
+        cardLeftBg: '#f8f0fb',
+        cardBorder: '#ce93d8'
+      },
+      sunset: {
+        id: 'sunset',
+        name: '🌅 Sunset Coral',
+        bgGradStart: '#fff3e0',
+        bgGradEnd: '#ffe0b2',
+        primary: '#e64a19',
+        primaryGradStart: '#ff7043',
+        primaryGradEnd: '#ff8a65',
+        primaryGlow: 'rgba(255, 112, 67, 0.4)',
+        choco: '#4e342e',
+        frosting: '#6d4c41',
+        cakeText: '#ffe082',
+        cardLeftBg: '#fff8e1',
+        cardBorder: '#ffcc80'
+      },
+      chocolate: {
+        id: 'chocolate',
+        name: '🍫 Chocolate Artisan',
+        bgGradStart: '#efebe9',
+        bgGradEnd: '#d7ccc8',
+        primary: '#4e342e',
+        primaryGradStart: '#6d4c41',
+        primaryGradEnd: '#8d6e63',
+        primaryGlow: 'rgba(109, 76, 65, 0.4)',
+        choco: '#271714',
+        frosting: '#3e2723',
+        cakeText: '#ffd54f',
+        cardLeftBg: '#ece6e2',
+        cardBorder: '#bcaaa4'
+      }
+    };
+
+    const DEFAULT_CONFIG = {
+      name: 'Mom',
+      age: '60',
+      headline: 'Happy 60th! ✨',
+      message: 'Wishing you a diamond milestone filled with endless health, bright laughter, warmth, and all the love in the world.\n\nThank you for every moment, wisdom, and smile. Here is to your best chapter yet!',
+      photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
+      theme: 'rose'
+    };
+
+    function getOrdinalSuffix(num) {
+      const n = parseInt(num, 10);
+      if (isNaN(n)) return '';
+      const j = n % 10, k = n % 100;
+      if (j === 1 && k !== 11) return n + 'st';
+      if (j === 2 && k !== 12) return n + 'nd';
+      if (j === 3 && k !== 13) return n + 'rd';
+      return n + 'th';
+    }
+
+    function loadConfig() {
+      let baseConfig = { ...DEFAULT_CONFIG };
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const saved = localStorage.getItem('birthday_app_config');
+        if (saved) {
+          baseConfig = { ...baseConfig, ...JSON.parse(saved) };
+        }
+        if (urlParams.get('name')) baseConfig.name = urlParams.get('name');
+        if (urlParams.get('age')) baseConfig.age = urlParams.get('age');
+        if (urlParams.get('headline')) baseConfig.headline = urlParams.get('headline');
+        if (urlParams.get('msg') || urlParams.get('message')) baseConfig.message = urlParams.get('msg') || urlParams.get('message');
+        if (urlParams.get('photo')) baseConfig.photoUrl = urlParams.get('photo');
+        if (urlParams.get('theme')) baseConfig.theme = urlParams.get('theme');
+      } catch (e) {
+        console.warn('Config load fallback used', e);
+      }
+      if (!THEMES[baseConfig.theme]) baseConfig.theme = 'rose';
+      return baseConfig;
+    }
+
+    function saveConfig(config) {
+      try {
+        localStorage.setItem('birthday_app_config', JSON.stringify(config));
+      } catch (e) {
+        console.warn('Config save fallback', e);
+      }
+    }
+
+    let currentConfig = loadConfig();
+    let audioContext;
+    let analyser;
+    let micStream;
+    let isBlown = false;
+
+    // DOM Elements
+    const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
+    const bubble = document.getElementById('bubble');
+    const flames = [document.getElementById('flame-1'), document.getElementById('flame-2'), document.getElementById('flame-3')];
+    const cardModal = document.getElementById('card-modal');
+    const animals = [document.getElementById('penguin'), document.getElementById('cat'), document.getElementById('dog')];
+    const toast = document.getElementById('toast');
+    const blowHint = document.getElementById('blow-hint');
+
+    // Apply Configuration & Theme to DOM
+    function applyAppConfig(cfg) {
+      currentConfig = { ...cfg };
+      const theme = THEMES[cfg.theme] || THEMES.rose;
+
+      // Apply CSS Theme Variables
+      document.documentElement.style.setProperty('--bg-start', theme.bgGradStart);
+      document.documentElement.style.setProperty('--bg-end', theme.bgGradEnd);
+      document.documentElement.style.setProperty('--primary', theme.primary);
+      document.documentElement.style.setProperty('--primary-start', theme.primaryGradStart);
+      document.documentElement.style.setProperty('--primary-end', theme.primaryGradEnd);
+      document.documentElement.style.setProperty('--primary-glow', theme.primaryGlow);
+      document.documentElement.style.setProperty('--choco', theme.choco);
+      document.documentElement.style.setProperty('--frosting', theme.frosting);
+      document.documentElement.style.setProperty('--cake-text', theme.cakeText);
+      document.documentElement.style.setProperty('--card-left-bg', theme.cardLeftBg);
+      document.documentElement.style.setProperty('--card-border', theme.cardBorder);
+
+      const metaTheme = document.getElementById('meta-theme-color');
+      if (metaTheme) metaTheme.setAttribute('content', theme.primaryGradEnd);
+
+      // Dynamic text updates
+      const ordinal = getOrdinalSuffix(cfg.age);
+      document.getElementById('cake-text').textContent = `Happy Birthday ${cfg.name}`;
+      document.getElementById('cake-age').textContent = `${cfg.age} Years of Joy`;
+      document.getElementById('bubble').innerHTML = `Happy ${ordinal || cfg.age + 'th'} Birthday! 🎂<br/>Blow the candles and make a wish!`;
+      document.getElementById('card-headline').textContent = cfg.headline;
+      document.getElementById('card-message').textContent = cfg.message;
+      document.getElementById('card-img').src = cfg.photoUrl;
+      document.title = `Happy ${ordinal || cfg.age + 'th'} Birthday ${cfg.name}! 🎉`;
+    }
+
+    // Initialize View
+    applyAppConfig(currentConfig);
+
+    // Audio Engine & Start Sequence
+    startBtn.addEventListener('click', async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioContext.createMediaStreamSource(micStream);
+          
+          const filter = audioContext.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 250;
+
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(filter);
+          filter.connect(analyser);
+
+          listenForBlow();
+        }
+      } catch (err) {
+        console.warn('Microphone access bypassed or denied; tap fallback available.', err);
+      }
+
+      startScreen.style.display = 'none';
+      runOpeningSequence();
+    });
+
+    function runOpeningSequence() {
+      animals.forEach((animal, index) => {
+        animal.style.opacity = '1';
+        animal.style.animation = `popIn 0.4s ${index * 0.1}s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
+      });
+
+      setTimeout(() => {
+        document.getElementById('penguin').style.setProperty('--startX', '-140px');
+        document.getElementById('penguin').style.setProperty('--startY', '-80px');
+        document.getElementById('penguin').style.animation = `wobbleRun 1.8s ease-in-out forwards`;
+
+        document.getElementById('cat').style.setProperty('--startX', '0px');
+        document.getElementById('cat').style.setProperty('--startY', '-120px');
+        document.getElementById('cat').style.animation = `wobbleRun 1.8s ease-in-out forwards`;
+
+        document.getElementById('dog').style.setProperty('--startX', '140px');
+        document.getElementById('dog').style.setProperty('--startY', '-80px');
+        document.getElementById('dog').style.animation = `wobbleRun 1.8s ease-in-out forwards`;
+      }, 500);
+
+      setTimeout(() => {
+        bubble.classList.add('show');
+      }, 2400);
+    }
+
+    function listenForBlow() {
+      if (isBlown || !analyser) return;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+
+      let sum = 0;
+      for (let i = 1; i < 8; i++) {
+        sum += dataArray[i];
+      }
+      let avg = sum / 7;
+
+      if (avg > 58) {
+        blowCandles();
+        return;
+      }
+      requestAnimationFrame(listenForBlow);
+    }
+
+    function blowCandles() {
+      if (isBlown) return;
+      isBlown = true;
+
+      if (micStream) {
+        try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      }
+
+      flames.forEach(f => f.classList.add('out'));
+      bubble.classList.remove('show');
+
+      if (window.confetti) {
+        confetti({
+          particleCount: 70,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+
+      animals.forEach(el => el.classList.add('cheering'));
+
+      setTimeout(() => {
+        cardModal.classList.add('open');
+        if (window.confetti) {
+          confetti({
+            particleCount: 100,
+            spread: 100,
+            origin: { y: 0.4 }
+          });
+        }
+      }, 1200);
+    }
+
+    window.blowCandles = blowCandles;
+    blowHint.addEventListener('click', blowCandles);
+
+    document.getElementById('close-card-btn').addEventListener('click', () => {
+      cardModal.classList.remove('open');
+    });
+
+    // Customizer Modal Logic
+    const customizerModal = document.getElementById('customizer-modal');
+    const openCustomizerBtn = document.getElementById('open-customizer-btn');
+    const closeCustomizerBtn = document.getElementById('close-customizer-btn');
+    const saveConfigBtn = document.getElementById('save-config-btn');
+    const resetConfigBtn = document.getElementById('reset-config-btn');
+    const shareBtn = document.getElementById('share-btn');
+    const themeGrid = document.getElementById('theme-selector-grid');
+
+    // Populate theme selector
+    Object.values(THEMES).forEach(theme => {
+      const opt = document.createElement('div');
+      opt.className = `theme-option ${currentConfig.theme === theme.id ? 'active' : ''}`;
+      opt.dataset.themeId = theme.id;
+      opt.innerHTML = `
+        <span class="palette-circle" style="background:${theme.primary}; border:1px solid ${theme.primaryGradStart}"></span>
+        <span>${theme.name}</span>
+      `;
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+        opt.classList.add('active');
+      });
+      themeGrid.appendChild(opt);
+    });
+
+    function populateCustomizerForm() {
+      document.getElementById('cfg-name').value = currentConfig.name;
+      document.getElementById('cfg-age').value = currentConfig.age;
+      document.getElementById('cfg-headline').value = currentConfig.headline;
+      document.getElementById('cfg-message').value = currentConfig.message;
+      document.getElementById('cfg-photo').value = currentConfig.photoUrl;
+
+      document.querySelectorAll('.theme-option').forEach(opt => {
+        if (opt.dataset.themeId === currentConfig.theme) {
+          opt.classList.add('active');
+        } else {
+          opt.classList.remove('active');
+        }
+      });
+    }
+
+    openCustomizerBtn.addEventListener('click', () => {
+      populateCustomizerForm();
+      customizerModal.classList.add('show');
+    });
+
+    closeCustomizerBtn.addEventListener('click', () => {
+      customizerModal.classList.remove('show');
+    });
+
+    // Handle Image file upload
+    document.getElementById('cfg-photo-file').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          document.getElementById('cfg-photo').value = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    saveConfigBtn.addEventListener('click', () => {
+      const activeThemeOpt = document.querySelector('.theme-option.active');
+      const selectedTheme = activeThemeOpt ? activeThemeOpt.dataset.themeId : 'rose';
+      const ageVal = document.getElementById('cfg-age').value.trim() || '60';
+      const nameVal = document.getElementById('cfg-name').value.trim() || 'Friend';
+      let headlineVal = document.getElementById('cfg-headline').value.trim();
+      if (!headlineVal) {
+        headlineVal = `Happy ${getOrdinalSuffix(ageVal)}! ✨`;
+      }
+
+      const updated = {
+        name: nameVal,
+        age: ageVal,
+        headline: headlineVal,
+        message: document.getElementById('cfg-message').value.trim() || DEFAULT_CONFIG.message,
+        photoUrl: document.getElementById('cfg-photo').value.trim() || DEFAULT_CONFIG.photoUrl,
+        theme: selectedTheme
+      };
+
+      saveConfig(updated);
+      applyAppConfig(updated);
+      customizerModal.classList.remove('show');
+      showToast('Birthday customized successfully! 🎉');
+    });
+
+    resetConfigBtn.addEventListener('click', () => {
+      saveConfig(DEFAULT_CONFIG);
+      applyAppConfig(DEFAULT_CONFIG);
+      populateCustomizerForm();
+      showToast('Reset to default settings');
+    });
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    shareBtn.addEventListener('click', async () => {
+      let shareUrl = window.location.href.split('?')[0];
+      const params = new URLSearchParams();
+      params.set('name', currentConfig.name);
+      params.set('age', currentConfig.age);
+      params.set('headline', currentConfig.headline);
+      params.set('msg', currentConfig.message);
+      params.set('photo', currentConfig.photoUrl);
+      params.set('theme', currentConfig.theme);
+      shareUrl += '?' + params.toString();
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+          showToast('Shareable link copied to clipboard! 📋');
+        } else {
+          prompt('Copy this customized link:', shareUrl);
+        }
+      } catch (err) {
+        prompt('Copy this customized link:', shareUrl);
+      }
+    });
+  </script>
+</body>
+</html>

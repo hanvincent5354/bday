@@ -543,6 +543,9 @@
 
   <!-- Floating Customization & Share Bar -->
   <div class="top-bar">
+    <button class="icon-btn" id="music-toggle-btn" title="Toggle Music">
+      🎵 Music: ON
+    </button>
     <button class="icon-btn" id="open-customizer-btn" title="Customize Birthday">
       ⚙️ Customize
     </button>
@@ -892,12 +895,116 @@
     // Initialize View
     applyAppConfig(currentConfig);
 
+    // Background Music Synthesizer (Music Box / Glockenspiel Chime)
+    let musicMasterGain;
+    let isMusicPlaying = false;
+    let isMuted = false;
+    let musicTimer = null;
+
+    const NOTE_FREQS = {
+      C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, Bb4: 466.16, B4: 493.88,
+      C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46
+    };
+
+    // Melody notes & beat durations: [note, beats]
+    const BDAY_MELODY = [
+      ['C4', 0.75], ['C4', 0.25], ['D4', 1.0], ['C4', 1.0], ['F4', 1.0], ['E4', 2.0],
+      ['C4', 0.75], ['C4', 0.25], ['D4', 1.0], ['C4', 1.0], ['G4', 1.0], ['F4', 2.0],
+      ['C4', 0.75], ['C4', 0.25], ['C5', 1.0], ['A4', 1.0], ['F4', 1.0], ['E4', 1.0], ['D4', 2.0],
+      ['Bb4', 0.75], ['Bb4', 0.25], ['A4', 1.0], ['F4', 1.0], ['G4', 1.0], ['F4', 2.5]
+    ];
+
+    function playTone(freq, time, duration) {
+      if (!audioContext || isMuted) return;
+      
+      const osc = audioContext.createOscillator();
+      const osc2 = audioContext.createOscillator();
+      const noteGain = audioContext.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, time);
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(freq * 2, time); // 2nd harmonic sparkle
+
+      noteGain.gain.setValueAtTime(0, time);
+      noteGain.gain.linearRampToValueAtTime(0.2, time + 0.03); // gentle bell strike
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration * 0.95);
+
+      osc.connect(noteGain);
+      osc2.connect(noteGain);
+      noteGain.connect(musicMasterGain || audioContext.destination);
+
+      osc.start(time);
+      osc2.start(time);
+      osc.stop(time + duration);
+      osc2.stop(time + duration);
+    }
+
+    function scheduleBirthdayTune() {
+      if (!audioContext || !isMusicPlaying) return;
+      const tempo = 110; // BPM
+      const beatDuration = 60 / tempo;
+      let currentTime = audioContext.currentTime + 0.1;
+
+      BDAY_MELODY.forEach(([note, beats]) => {
+        const freq = NOTE_FREQS[note];
+        const noteDur = beats * beatDuration;
+        if (freq) {
+          playTone(freq, currentTime, noteDur * 1.1);
+        }
+        currentTime += noteDur;
+      });
+
+      const totalTuneDuration = (currentTime - audioContext.currentTime);
+      musicTimer = setTimeout(() => {
+        if (isMusicPlaying) {
+          scheduleBirthdayTune();
+        }
+      }, (totalTuneDuration + 1.2) * 1000); // 1.2s rest between loops
+    }
+
+    function startBackgroundMusic() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      if (!musicMasterGain) {
+        musicMasterGain = audioContext.createGain();
+        musicMasterGain.gain.setValueAtTime(0.25, audioContext.currentTime);
+        musicMasterGain.connect(audioContext.destination);
+      }
+      if (!isMusicPlaying) {
+        isMusicPlaying = true;
+        scheduleBirthdayTune();
+      }
+    }
+
+    const musicToggleBtn = document.getElementById('music-toggle-btn');
+    musicToggleBtn.addEventListener('click', () => {
+      isMuted = !isMuted;
+      if (musicMasterGain) {
+        musicMasterGain.gain.setValueAtTime(isMuted ? 0 : 0.25, audioContext ? audioContext.currentTime : 0);
+      }
+      musicToggleBtn.textContent = isMuted ? '🔇 Music: OFF' : '🎵 Music: ON';
+      showToast(isMuted ? 'Music Muted' : 'Music Playing 🎶');
+    });
+
     // Audio Engine & Start Sequence
     startBtn.addEventListener('click', async () => {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      startBackgroundMusic();
+
       try {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-          audioContext = new (window.AudioContext || window.webkitAudioContext)();
           const source = audioContext.createMediaStreamSource(micStream);
           
           const filter = audioContext.createBiquadFilter();

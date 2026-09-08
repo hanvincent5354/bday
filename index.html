@@ -408,10 +408,14 @@
       color: #888;
       cursor: pointer;
       text-decoration: underline;
-      padding: 8px 12px;
-      background: rgba(255,255,255,0.7);
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.85);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
       border-radius: 12px;
       z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
     }
 
     /* Customizer Drawer / Modal */
@@ -545,6 +549,9 @@
   <div class="top-bar">
     <button class="icon-btn" id="music-toggle-btn" title="Toggle Music">
       🎵 Music: ON
+    </button>
+    <button class="icon-btn" id="open-card-btn" style="display: none; background: #fff0f3; border-color: var(--primary);" title="Open Birthday Card">
+      💌 View Card
     </button>
     <button class="icon-btn" id="open-customizer-btn" title="Customize Birthday">
       ⚙️ Customize
@@ -900,6 +907,7 @@
     let isMusicPlaying = false;
     let isMuted = false;
     let musicTimer = null;
+    let canBlow = false;
 
     const NOTE_FREQS = {
       C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, Bb4: 466.16, B4: 493.88,
@@ -925,10 +933,11 @@
       osc.frequency.setValueAtTime(freq, time);
 
       osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(freq * 2, time); // 2nd harmonic sparkle
+      osc2.frequency.setValueAtTime(freq * 2, time); // 2nd harmonic chime sparkle
 
+      // Louder, rich bell tone
       noteGain.gain.setValueAtTime(0, time);
-      noteGain.gain.linearRampToValueAtTime(0.2, time + 0.03); // gentle bell strike
+      noteGain.gain.linearRampToValueAtTime(0.55, time + 0.03);
       noteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration * 0.95);
 
       osc.connect(noteGain);
@@ -973,7 +982,7 @@
       }
       if (!musicMasterGain) {
         musicMasterGain = audioContext.createGain();
-        musicMasterGain.gain.setValueAtTime(0.25, audioContext.currentTime);
+        musicMasterGain.gain.setValueAtTime(0.95, audioContext.currentTime); // Rich loud volume
         musicMasterGain.connect(audioContext.destination);
       }
       if (!isMusicPlaying) {
@@ -986,10 +995,15 @@
     musicToggleBtn.addEventListener('click', () => {
       isMuted = !isMuted;
       if (musicMasterGain) {
-        musicMasterGain.gain.setValueAtTime(isMuted ? 0 : 0.25, audioContext ? audioContext.currentTime : 0);
+        musicMasterGain.gain.setValueAtTime(isMuted ? 0 : 0.95, audioContext ? audioContext.currentTime : 0);
       }
       musicToggleBtn.textContent = isMuted ? '🔇 Music: OFF' : '🎵 Music: ON';
       showToast(isMuted ? 'Music Muted' : 'Music Playing 🎶');
+    });
+
+    const openCardBtn = document.getElementById('open-card-btn');
+    openCardBtn.addEventListener('click', () => {
+      cardModal.classList.add('open');
     });
 
     // Audio Engine & Start Sequence
@@ -1027,6 +1041,7 @@
     });
 
     function runOpeningSequence() {
+      canBlow = false;
       animals.forEach((animal, index) => {
         animal.style.opacity = '1';
         animal.style.animation = `popIn 0.4s ${index * 0.1}s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
@@ -1046,23 +1061,38 @@
         document.getElementById('dog').style.animation = `wobbleRun 1.8s ease-in-out forwards`;
       }, 500);
 
+      // Only allow blowing AFTER the speech bubble shows up
       setTimeout(() => {
         bubble.classList.add('show');
+        canBlow = true;
+        if (blowHint) {
+          blowHint.style.opacity = '1';
+          blowHint.style.pointerEvents = 'auto';
+        }
       }, 2400);
     }
 
     function listenForBlow() {
       if (isBlown || !analyser) return;
+
+      if (!canBlow) {
+        requestAnimationFrame(listenForBlow);
+        return;
+      }
+
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
 
       let sum = 0;
+      let maxVal = 0;
       for (let i = 1; i < 8; i++) {
         sum += dataArray[i];
+        if (dataArray[i] > maxVal) maxVal = dataArray[i];
       }
       let avg = sum / 7;
 
-      if (avg > 58) {
+      // Require a loud, deliberate blow (high average or strong peak in sub-250Hz)
+      if (avg > 92 || maxVal > 135) {
         blowCandles();
         return;
       }
@@ -1070,7 +1100,7 @@
     }
 
     function blowCandles() {
-      if (isBlown) return;
+      if (!canBlow || isBlown) return;
       isBlown = true;
 
       if (micStream) {
@@ -1079,6 +1109,7 @@
 
       flames.forEach(f => f.classList.add('out'));
       bubble.classList.remove('show');
+      if (blowHint) blowHint.style.opacity = '0';
 
       if (window.confetti) {
         confetti({
@@ -1090,8 +1121,10 @@
 
       animals.forEach(el => el.classList.add('cheering'));
 
+      // Card modal opens and stays on screen unless explicitly crossed out
       setTimeout(() => {
         cardModal.classList.add('open');
+        openCardBtn.style.display = 'flex'; // Enable the button to re-open the card anytime
         if (window.confetti) {
           confetti({
             particleCount: 100,
@@ -1103,7 +1136,11 @@
     }
 
     window.blowCandles = blowCandles;
-    blowHint.addEventListener('click', blowCandles);
+    blowHint.addEventListener('click', () => {
+      if (canBlow) {
+        blowCandles();
+      }
+    });
 
     document.getElementById('close-card-btn').addEventListener('click', () => {
       cardModal.classList.remove('open');

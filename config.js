@@ -100,11 +100,11 @@ export const THEMES = {
 };
 
 export const DEFAULT_CONFIG = {
-  name: 'Mom',
+  name: 'Mame',
   age: '60',
-  headline: 'Happy 60th! ✨',
+  headline: 'Happy 60th Birthday Mame!',
   message: 'Wishing you a diamond milestone filled with endless health, bright laughter, warmth, and all the love in the world.\n\nThank you for every moment, wisdom, and smile. Here is to your best chapter yet!',
-  photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
+  photoUrl: 'mame.jpg',
   theme: 'rose'
 };
 
